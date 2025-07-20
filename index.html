@@ -58,6 +58,27 @@
             opacity: 0.9;
         }
 
+        /* Last watched */
+        .last-watched {
+            background-color: white;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .last-watched h2 {
+            color: var(--barbie-purple);
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .last-watched p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
         /* Media Grid */
         .media-grid {
             display: grid;
@@ -72,11 +93,25 @@
             overflow: hidden;
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
         }
 
         .media-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .format-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: var(--barbie-blue);
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            z-index: 1;
         }
 
         .thumbnail-container {
@@ -237,6 +272,7 @@
         #videoPlayer {
             width: 100%;
             height: 100%;
+            border: none;
         }
 
         .video-controls {
@@ -361,6 +397,12 @@
     </header>
 
     <main class="container">
+        <!-- Último filme assistido -->
+        <div class="last-watched" id="lastWatched">
+            <h2><i class="fas fa-history"></i> Último filme assistido</h2>
+            <p id="lastWatchedTitle"></p>
+        </div>
+
         <section class="media-grid" id="mediaContainer">
             <div class="loading">
                 <i class="fas fa-spinner fa-spin"></i> Carregando vídeos...
@@ -372,15 +414,8 @@
         <div class="modal-content">
             <span class="close-btn">&times;</span>
             <div class="video-container">
-                <video id="videoPlayer">
-                    Seu navegador não suporta a tag de vídeo.
-                </video>
+                <iframe id="videoPlayer" frameborder="0" allowfullscreen></iframe>
                 <div class="video-controls">
-                    <button class="control-btn" id="playPauseBtn"><i class="fas fa-play"></i></button>
-                    <div class="progress-container" id="progressContainer">
-                        <div class="progress-bar" id="progressBar"></div>
-                    </div>
-                    <span class="time-display" id="timeDisplay">00:00 / 00:00</span>
                     <button class="control-btn" id="fullscreenBtn"><i class="fas fa-expand"></i></button>
                 </div>
             </div>
@@ -399,136 +434,141 @@
             const modal = document.getElementById('videoModal');
             const videoPlayer = document.getElementById('videoPlayer');
             const closeBtn = document.querySelector('.close-btn');
-            const playPauseBtn = document.getElementById('playPauseBtn');
-            const progressBar = document.getElementById('progressBar');
-            const progressContainer = document.getElementById('progressContainer');
-            const timeDisplay = document.getElementById('timeDisplay');
             const fullscreenBtn = document.getElementById('fullscreenBtn');
             const videoContainer = document.querySelector('.video-container');
+            const lastWatchedSection = document.getElementById('lastWatched');
+            const lastWatchedTitle = document.getElementById('lastWatchedTitle');
 
-            // Lista de vídeos
-           const videos = [
+            // Verificar se há último filme assistido no localStorage
+            const lastWatched = localStorage.getItem('lastWatched');
+            if (lastWatched) {
+                const lastWatchedData = JSON.parse(lastWatched);
+                lastWatchedTitle.textContent = lastWatchedData.title;
+                lastWatchedSection.style.display = 'block';
+                
+                // Adicionar evento de clique para reproduzir o último filme
+                lastWatchedSection.addEventListener('click', function() {
+                    openVideoModal(lastWatchedData.embedUrl, lastWatchedData.title);
+                });
+            }
+
+            // Lista de vídeos com links do Google Drive e formatos
+            const videos = [
                 {
                     title: "Barbie Butterfly: Uma Nova Aventura Em Fairytopia",
                     duration: "1h 14min 28s",
-                    filename: "Barbie Butterfly Uma Nova Aventura Em Fairytopia.mp4",
-                    thumbnail: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT4PKpA-CYRMYoQsSgZk_5iTSQEbMVknSyGkg&s"
+                    embedUrl: "https://drive.google.com/file/d/1rPPfeTcQMT7JPuvbDdkyN-SKM_ProS7t/preview",
+                    thumbnail: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT4PKpA-CYRMYoQsSgZk_5iTSQEbMVknSyGkg&s",
+                    format: "MP4"
                 },
                 {
                     title: "Barbie como Rapunzel",
                     duration: "1h 18min 05s",
-                    filename: "Barbie como Rapunzel.mp4",
-                    thumbnail: "https://i.ytimg.com/vi/VXve7LSNJZU/maxresdefault.jpg"
+                    embedUrl: "https://drive.google.com/file/d/1vMu50R_p-b0Jbrkf_JM2QidIDrdacKu-/preview",
+                    thumbnail: "https://i.ytimg.com/vi/VXve7LSNJZU/maxresdefault.jpg",
+                    format: "MP4"
                 },
                 {
                     title: "Barbie e as Tres Mosqueteiras",
                     duration: "1h 21min 02s",
-                    filename: "Barbie e as Tres Mosqueteiras.mp4",
-                    thumbnail: "https://i.ytimg.com/vi/Phq1nRctX9c/maxresdefault.jpg"
+                    embedUrl: "https://drive.google.com/file/d/1K1XpR9z7P1euS5cTB-e4hMwzvwEfJbdO/preview",
+                    thumbnail: "https://i.ytimg.com/vi/Phq1nRctX9c/maxresdefault.jpg",
+                    format: "MP4"
                 },
                 {
                     title: "Barbie e o Castelo de Diamante",
                     duration: "1h 17min 54s",
-                    filename: "Barbie e o Castelo de Diamante.mp4",
-                    thumbnail: "https://i.ytimg.com/vi/MKDsl_qVfdo/hq720.jpg?sqp=-oaymwEXCK4FEIIDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLAnzAP15hBSbYsH6vnCfo2r5BYSKA"
+                    embedUrl: "https://drive.google.com/file/d/1rsAOfXT2Q8rb18oyjuUY0xeYCtWZNgn2/preview",
+                    thumbnail: "https://i.ytimg.com/vi/MKDsl_qVfdo/hq720.jpg?sqp=-oaymwEXCK4FEIIDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLAnzAP15hBSbYsH6vnCfo2r5BYSKA",
+                    format: "MP4"
                 },
                 {
                     title: "Barbie e o Segredo das Fadas",
                     duration: "1h 11min 53s",
-                    filename: "Barbie e o Segredo das Fadas.mp4",
-                    thumbnail: "https://m.media-amazon.com/images/S/pv-target-images/1c2e6c866fd1ea9fc9e537b7358288a0585f072c094e223034f3f3370c598cb5.jpg"
+                    embedUrl: "https://drive.google.com/file/d/1n1ZSmbY6LUZIHZj2V8uij3d97QemuADP/preview",
+                    thumbnail: "https://m.media-amazon.com/images/S/pv-target-images/1c2e6c866fd1ea9fc9e537b7358288a0585f072c094e223034f3f3370c598cb5.jpg",
+                    format: "MP4"
                 },
                 {
                     title: "Barbie em A Canção de Natal",
                     duration: "1h 15min 54s",
-                    filename: "Barbie em A Canção de Natal.mp4",
-                    thumbnail: "https://i.ytimg.com/vi/UUAWY5RoePE/sddefault.jpg"
+                    embedUrl: "https://drive.google.com/file/d/1gj8_-YReDWGhx5N1LyjAUMSnyDwj7clU/preview",
+                    thumbnail: "https://i.ytimg.com/vi/UUAWY5RoePE/sddefault.jpg",
+                    format: "MP4"
                 },
                 {
                     title: "Barbie em A Princesa Da Ilha",
                     duration: "1h 24min 45s",
-                    filename: "Barbie em A Princesa Da Ilha.mp4",
-                    thumbnail: "https://m.media-amazon.com/images/S/pv-target-images/f4adfc1f7795bbed56b978e1783191f2a19242ff411a2c9042c0eb58ad5e3816.jpg"
+                    embedUrl: "https://drive.google.com/file/d/1TYzi2bIjgvBdILUfg6Q5LY8YXSTZaiox/preview",
+                    thumbnail: "https://m.media-amazon.com/images/S/pv-target-images/f4adfc1f7795bbed56b978e1783191f2a19242ff411a2c9042c0eb58ad5e3816.jpg",
+                    format: "MP4"
                 },
                 {
                     title: "Barbie em A Princesa e a Plebeia",
                     duration: "1h 25min 11s",
-                    filename: "Barbie em A Princesa e a Plebeia.mp4",
-                    thumbnail: "https://i.ytimg.com/vi/Sl0YwQf5UtY/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLDheBJ4F4RhgwLKi_HZxBSZFTUTIA"
+                    embedUrl: "https://drive.google.com/file/d/1j-AfDP0jI5XkVVU0wgFXcOAWuDzUNyUc/preview",
+                    thumbnail: "https://i.ytimg.com/vi/Sl0YwQf5UtY/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLDheBJ4F4RhgwLKi_HZxBSZFTUTIA",
+                    format: "MP4"
                 },
                 {
                     title: "Barbie em As 12 Princesas Bailarinas",
                     duration: "1h 22min 25s",
-                    filename: "Barbie em as 12 Princesas Bailarinas.mp4",
-                    thumbnail: "https://i.ytimg.com/vi/KLQQHYgl5ME/maxresdefault.jpg"
+                    embedUrl: "https://drive.google.com/file/d/18rJ0AkpHibfHnmF14L2gB9datE1n0WMj/preview",
+                    thumbnail: "https://i.ytimg.com/vi/KLQQHYgl5ME/maxresdefault.jpg",
+                    format: "MP4"
                 },
                 {
                     title: "Barbie em O Lago dos Cisnes",
                     duration: "1h 22min 35s",
-                    filename: "Barbie em o Lago dos Cisnes.mp4",
-                    thumbnail: "https://i.ytimg.com/vi/BDOA4oyDvHc/maxresdefault.jpg"
+                    embedUrl: "https://drive.google.com/file/d/1EgnbKLvGI95ebTdB6odT-8tVXUs6iNY6/preview",
+                    thumbnail: "https://i.ytimg.com/vi/BDOA4oyDvHc/maxresdefault.jpg",
+                    format: "MP4"
                 },
                 {
                     title: "Barbie em Vida de Sereia",
                     duration: "1h 13min 51s",
-                    filename: "Barbie em Vida de Sereia.mp4",
-                    thumbnail: "https://m.media-amazon.com/images/S/pv-target-images/63bf24f1ca2886650bfd41705ea21d5ae61d19095dcd62842922aeaad51a5616.jpg"
+                    embedUrl: "https://drive.google.com/file/d/1vJp8qrCk3xcAoLx_NBz1CbvtiD4ICE0d/preview",
+                    thumbnail: "https://m.media-amazon.com/images/S/pv-target-images/63bf24f1ca2886650bfd41705ea21d5ae61d19095dcd62842922aeaad51a5616.jpg",
+                    format: "AVI"
                 },
                 {
                     title: "Barbie Escola de Princesas",
                     duration: "1h 19min 43s",
-                    filename: "Barbie Escola de Princesas.mp4",
-                    thumbnail: "https://m.media-amazon.com/images/S/pv-target-images/06309fe1bd0d407d2fb5c785e8427f4386f9414e0f078fe8740ae0f0626b0a3f.jpg"
+                    embedUrl: "https://drive.google.com/file/d/13tDZKiHjHLVZP0JvbO8FlXmcF3EKDvxl/preview",
+                    thumbnail: "https://m.media-amazon.com/images/S/pv-target-images/06309fe1bd0d407d2fb5c785e8427f4386f9414e0f078fe8740ae0f0626b0a3f.jpg",
+                    format: "MP4"
                 },
                 {
                     title: "Barbie Fairytopia: A Mágia do Arco-Iris",
                     duration: "1h 14min 13s",
-                    filename: "Barbie Fairytopia em A Mágia do Arco-Iris.mp4",
-                    thumbnail: "https://m.media-amazon.com/images/S/pv-target-images/e7f0f04df900ef9566b4cc59b32d4bdec375eeb9b61bb930edbe4a76f3e950e7.jpg"
+                    embedUrl: "https://drive.google.com/file/d/1DpgwtgG1YC3hDT3fyPuWQQyjS8OQaeJY/preview",
+                    thumbnail: "https://m.media-amazon.com/images/S/pv-target-images/e7f0f04df900ef9566b4cc59b32d4bdec375eeb9b61bb930edbe4a76f3e950e7.jpg",
+                    format: "MP4"
                 },
                 {
                     title: "Barbie Fairytopia",
                     duration: "1h 10min 18s",
-                    filename: "Barbie Fairytopia.mp4",
-                    thumbnail: "https://play-lh.googleusercontent.com/proxy/oejMxIQEx1uJIV2hR0B7hqnckauiMebNOpz9MqEgwV6J4-at54kHxzUNqDcD94WVGjzMvZYqKZoeqKNuM8cXGHI5VDxLKVz6KvNIiWeoOPwHlUKVa2pH=s1920-w1920-h1080"
+                    embedUrl: "https://drive.google.com/file/d/1NmCGKltxiO7jHPD8e9K0ReQlSiKAk6PT/preview",
+                    thumbnail: "https://play-lh.googleusercontent.com/proxy/oejMxIQEx1uJIV2hR0B7hqnckauiMebNOpz9MqEgwV6J4-at54kHxzUNqDcD94WVGjzMvZYqKZoeqKNuM8cXGHI5VDxLKVz6KvNIiWeoOPwHlUKVa2pH=s1920-w1920-h1080",
+                    format: "MP4"
                 },
                 {
                     title: "Barbie Moda e Magia",
                     duration: "1h 22min 07s",
-                    filename: "Barbie Moda e Magia.mp4",
-                    thumbnail: "https://img27.tokyvideo.com/videos/274/274542/previews/previews_0012_custom_1694094064.5975.jpg"
+                    embedUrl: "https://drive.google.com/file/d/1NmCGKltxiO7jHPD8e9K0ReQlSiKAk6PT/preview",
+                    thumbnail: "https://img27.tokyvideo.com/videos/274/274542/previews/previews_0012_custom_1694094064.5975.jpg",
+                    format: "MP4"
                 },
                 {
                     title: "O Diário Da Barbie",
                     duration: "1h 10min",
-                    filename: "O Diário Da Barbie.mp4",
-                    thumbnail: "https://i.ytimg.com/vi/LCxyHjUjaQ8/maxresdefault.jpg"
+                    embedUrl: "https://drive.google.com/file/d/1aLyFcrN1rqK1w3hWRBb5ymYy0OLocN67/preview",
+                    thumbnail: "https://i.ytimg.com/vi/LCxyHjUjaQ8/maxresdefault.jpg",
+                    format: "MP4"
                 }
             ];
 
-            // Função para formatar o tempo
-            function formatTime(seconds) {
-                const minutes = Math.floor(seconds / 60);
-                const secs = Math.floor(seconds % 60);
-                return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-            }
-
-            // Atualizar barra de progresso e tempo
-            function updateProgress() {
-                const progress = (videoPlayer.currentTime / videoPlayer.duration) * 100;
-                progressBar.style.width = `${progress}%`;
-                timeDisplay.textContent = `${formatTime(videoPlayer.currentTime)} / ${formatTime(videoPlayer.duration)}`;
-            }
-
-            // Definir progresso ao clicar na barra
-            function setProgress(e) {
-                const width = this.clientWidth;
-                const clickX = e.offsetX;
-                const duration = videoPlayer.duration;
-                videoPlayer.currentTime = (clickX / width) * duration;
-            }
-
-            // Alternar tela cheia
+            // Função para alternar tela cheia
             function toggleFullscreen() {
                 if (!document.fullscreenElement) {
                     if (videoContainer.requestFullscreen) {
@@ -549,30 +589,24 @@
                 }
             }
 
-            // Event listeners para controles
-            playPauseBtn.addEventListener('click', () => {
-                if (videoPlayer.paused) {
-                    videoPlayer.play();
-                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                } else {
-                    videoPlayer.pause();
-                    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            // Função para abrir o modal de vídeo
+            function openVideoModal(videoUrl, videoTitle) {
+                videoPlayer.src = videoUrl;
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                
+                // Salvar o último filme assistido
+                localStorage.setItem('lastWatched', JSON.stringify({
+                    title: videoTitle,
+                    embedUrl: videoUrl
+                }));
+                
+                // Atualizar a seção de último filme assistido
+                if (lastWatchedSection.style.display !== 'block') {
+                    lastWatchedSection.style.display = 'block';
                 }
-            });
-
-            progressContainer.addEventListener('click', setProgress);
-            fullscreenBtn.addEventListener('click', toggleFullscreen);
-
-            videoPlayer.addEventListener('timeupdate', updateProgress);
-            videoPlayer.addEventListener('play', () => {
-                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-            });
-            videoPlayer.addEventListener('pause', () => {
-                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-            });
-            videoPlayer.addEventListener('loadedmetadata', () => {
-                timeDisplay.textContent = `00:00 / ${formatTime(videoPlayer.duration)}`;
-            });
+                lastWatchedTitle.textContent = videoTitle;
+            }
 
             // Função para carregar os vídeos
             function loadVideos() {
@@ -583,8 +617,9 @@
                     videoCard.className = 'media-card';
                     videoCard.innerHTML = `
                         <div class="thumbnail-container">
+                            <span class="format-badge">${video.format}</span>
                             <img src="${video.thumbnail}" alt="${video.title}" class="thumbnail">
-                            <button class="play-button" data-video="videos/${video.filename}">
+                            <button class="play-button" data-video="${video.embedUrl}" data-title="${video.title}">
                                 <i class="fas fa-play"></i>
                             </button>
                         </div>
@@ -592,7 +627,7 @@
                             <h3>${video.title}</h3>
                             <p>Duração: ${video.duration}</p>
                             <div class="media-actions">
-                                <button class="barbie-btn watch-btn" data-video="videos/${video.filename}">
+                                <button class="barbie-btn watch-btn" data-video="${video.embedUrl}" data-title="${video.title}">
                                     <i class="fas fa-play"></i> Assistir
                                 </button>
                             </div>
@@ -605,17 +640,8 @@
                 document.querySelectorAll('.play-button, .watch-btn').forEach(button => {
                     button.addEventListener('click', function() {
                         const videoUrl = this.getAttribute('data-video');
-                        videoPlayer.src = videoUrl;
-                        modal.style.display = 'flex';
-                        document.body.style.overflow = 'hidden';
-                        
-                        const playPromise = videoPlayer.play();
-                        
-                        if (playPromise !== undefined) {
-                            playPromise.catch(e => {
-                                console.log('Autoplay não permitido:', e);
-                            });
-                        }
+                        const videoTitle = this.getAttribute('data-title');
+                        openVideoModal(videoUrl, videoTitle);
                     });
                 });
             }
@@ -626,19 +652,20 @@
             // Fechar o modal
             closeBtn.addEventListener('click', function() {
                 modal.style.display = 'none';
-                videoPlayer.pause();
-                videoPlayer.currentTime = 0;
+                videoPlayer.src = ''; // Remove o vídeo ao fechar
                 document.body.style.overflow = 'auto';
             });
 
             window.addEventListener('click', function(event) {
                 if (event.target === modal) {
                     modal.style.display = 'none';
-                    videoPlayer.pause();
-                    videoPlayer.currentTime = 0;
+                    videoPlayer.src = ''; // Remove o vídeo ao fechar
                     document.body.style.overflow = 'auto';
                 }
             });
+
+            // Configurar botão de tela cheia
+            fullscreenBtn.addEventListener('click', toggleFullscreen);
         });
     </script>
 </body>
